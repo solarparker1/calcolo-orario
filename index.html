@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#4f46e5">
+<title>Calcolo Orario di Uscita V3</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}.app{max-width:650px;margin:auto;padding:16px}.card{background:white;border-radius:16px;padding:20px;box-shadow:0 5px 22px #0001}h1{text-align:center;color:#4f46e5;font-size:1.45rem;margin:0}.sub{text-align:center;color:#6b7280;font-size:.9rem;margin:5px 0 20px}.section{font-weight:800;font-size:.82rem;color:#6b7280;text-transform:uppercase;border-bottom:1px solid #e5e7eb;padding-bottom:7px;margin:20px 0 12px}.quick{background:#ecfdf5;border:1px dashed #6ee7b7;border-radius:12px;padding:14px}textarea{width:100%;min-height:72px;padding:10px;border:1px solid #a7f3d0;border-radius:9px;font:inherit;margin-top:8px}button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;font-size:.95rem;cursor:pointer}.btn{width:100%;margin-top:9px;background:#4f46e5;color:white}.ok{background:#059669!important}.add{background:none;color:#4f46e5;padding:7px 0}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}input,select{font:inherit;padding:9px 10px;border:1px solid #e5e7eb;border-radius:8px;background:white}input[type=time]{min-width:125px}select{width:100%}.pause{border:1px solid #e5e7eb;border-radius:11px;padding:12px;margin:9px 0}.pause.open{border-color:#fed7aa;background:#fff7ed}.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.pt{display:flex;align-items:center;gap:7px}.pt input{width:100%}.remove{background:#fee2e2;color:#b91c1c;padding:6px 9px;font-size:.8rem}.error{display:none;margin-top:12px;padding:10px;border-radius:9px;background:#fef2f2;color:#b91c1c;font-weight:650}.result{display:none;margin-top:18px;border-left:5px solid #4f46e5;background:#f9fafb;padding:15px;border-radius:10px}.big{font-size:2.35rem;font-weight:850;text-align:center;color:#4f46e5;margin:3px 0 15px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:white;border:1px solid #e5e7eb;border-radius:8px;padding:9px}.stat small{display:block;color:#6b7280}#lunch{display:none;margin-top:18px;padding:15px;background:#fff7ed;border:1px solid #fed7aa;border-radius:11px;text-align:center}.timer{font-size:2.1rem;font-weight:850;color:#c2410c;margin:10px}.ta{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}.ta button{background:#e5e7eb}.ta .start{background:#10b981;color:white}.hint{font-size:.82rem;color:#6b7280;line-height:1.4}.banner{display:none;margin-top:12px;padding:14px;border-radius:10px;background:#dc2626;color:white;font-weight:800;text-align:center;font-size:1.05rem}.badge{display:inline-block;background:#fed7aa;color:#9a3412;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}@media(max-width:480px){.row{align-items:flex-start;flex-direction:column}.pt{width:100%}.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="app"><div class="card">
+<h1>🕘 Calcolo Orario di Uscita</h1><p class="sub">Versione 3 · massimo 3 pause</p>
+<div class="quick"><strong>📝 Inserimento rapido</strong><div class="hint">Validi sia <b>8:34</b> sia <b>8.34</b>.</div><textarea id="quick" placeholder="Esempio: 8:34 10:15 10:25 13:02 13:35"></textarea><button id="import" type="button" class="btn ok">Compila automaticamente</button></div>
+<div class="section">Ingresso</div><div class="row"><label for="entry">Ora di ingresso</label><input id="entry" type="time"></div>
+<div class="section">Pause</div><div id="pauses"></div><button id="add" type="button" class="add">＋ Aggiungi pausa</button>
+<div class="section">Durata giornata</div><select id="work"><option value="432">7 ore e 12 minuti</option><option value="360">6 ore</option><option value="540">9 ore</option></select>
+<button id="calc" type="button" class="btn">Calcola orario di uscita</button><div id="error" class="error"></div>
+<div id="result" class="result"><div class="section" style="margin-top:0">Risultato</div><div id="exit" class="big">--:--</div><div class="stats"><div class="stat"><small>Lavoro</small><strong id="wo">-</strong></div><div class="stat"><small>Pause</small><strong id="bo">-</strong></div><div class="stat"><small>Presenza</small><strong id="po">-</strong></div><div class="stat"><small>Pause completate</small><strong id="co">-</strong></div></div><div class="section">Dettaglio</div><ul id="details"></ul>
+<div id="lunch"><div class="section" style="margin-top:0">🍝 Pausa pranzo in corso</div><div id="lunchInfo"></div><div id="timer" class="timer">28:00</div><div id="banner" class="banner">🔔 È ora di timbrare!</div><div class="ta"><button id="start" type="button" class="start">▶ Avvia</button><button id="stop" type="button">⏸ Pausa</button><button id="reset" type="button">↺ Reset</button></div><div style="text-align:left;margin-top:12px"><label for="minutes">Durata promemoria (minuti)</label><input id="minutes" type="number" min="1" max="120" value="28" style="width:100%;margin-top:5px"></div><p class="hint">Il timer è solo un promemoria. Non effettua né registra automaticamente la timbratura.</p></div>
+</div></div></div>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STATO
+   ============================================================ */
+var pauses = [];        // { id, out, back, name, isLunch }
+var lunchId = null;     // id della pausa pranzo in corso (se aperta)
+var timerId = null;
+var timerSeconds = 28 * 60;
+var bannerTimer = null;
+
+/* ============================================================
+   UTILITÀ ORARI
+   ============================================================ */
+function mins(s){
+  if(!s) return null;
+  var a = s.split(":");
+  if(a.length !== 2) return null;
+  var h = parseInt(a[0],10), m = parseInt(a[1],10);
+  if(isNaN(h) || isNaN(m)) return null;
+  return h*60 + m;
+}
+function clock(n){
+  n = ((n % 1440) + 1440) % 1440;
+  var h = Math.floor(n/60), m = n%60;
+  return (h<10?"0"+h:""+h) + ":" + (m<10?"0"+m:""+m);
+}
+function fmt(n){
+  if(n == null) return "-";
+  var h = Math.floor(n/60), m = n%60;
+  return h + "h " + (m<10?"0"+m:""+m) + "m";
+}
+function normalizeTime(raw){
+  // accetta "8:34", "8.34", "08:34", "08.34", "834", "0834"
+  if(raw == null) return null;
+  var s = String(raw).trim();
+  var m = s.match(/^(\d{1,2})[:.](\d{1,2})$/);
+  if(m){
+    var h = parseInt(m[1],10), n = parseInt(m[2],10);
+    if(h<24 && n<60) return clock(h*60+n);
+    return null;
+  }
+  // solo cifre: "834" -> 8:34 ; "0834" -> 08:34
+  m = s.match(/^(\d{1,2})(\d{2})$/);
+  if(m){
+    var h2 = parseInt(m[1],10), n2 = parseInt(m[2],10);
+    if(h2<24 && n2<60) return clock(h2*60+n2);
+  }
+  return null;
+}
+
+/* ============================================================
+   MESSAGGI
+   ============================================================ */
+function err(s){
+  var e = document.getElementById("error");
+  e.textContent = "⚠️ " + s;
+  e.style.display = "block";
+}
+function clearErr(){
+  var e = document.getElementById("error");
+  e.textContent = "";
+  e.style.display = "none";
+}
+
+/* ============================================================
+   RENDER PAUSE
+   ============================================================ */
+function nextManualName(){
+  // trova il più piccolo "Pausa N" non usato
+  var used = {};
+  pauses.forEach(function(p){
+    var m = p.name.match(/^Pausa (\d+)$/);
+    if(m) used[+m[1]] = true;
+  });
+  var n = 1;
+  while(used[n]) n++;
+  return "Pausa " + n;
+}
+
+function render(){
+  var box = document.getElementById("pauses");
+  box.innerHTML = "";
+
+  pauses.forEach(function(p, i){
+    var card = document.createElement("div");
+    card.className = "pause" + (p.isLunch && !p.back ? " open" : "");
+
+    var head = document.createElement("div");
+    head.className = "ph";
+
+    var title = document.createElement("strong");
+    title.textContent = p.name;
+    if(p.isLunch && !p.back){
+      var badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = "IN CORSO";
+      title.appendChild(badge);
+    }
+
+    var rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "remove";
+    rm.textContent = "Rimuovi";
+    rm.addEventListener("click", function(){
+      pauses.splice(i,1);
+      if(lunchId != null && !pauses.some(function(x){return x.id===lunchId})){
+        lunchId = null;
+        hideLunch();
+      }
+      render();
+      calculate();
+    });
+
+    head.appendChild(title);
+    head.appendChild(rm);
+    card.appendChild(head);
+
+    var row = document.createElement("div");
+    row.className = "pt";
+
+    var out = document.createElement("input");
+    out.type = "time";
+    out.value = p.out || "";
+    out.addEventListener("change", function(){
+      p.out = out.value;
+      // se diventa pausa pranzo (uscita >= 13:00) e non ha rientro, rinomina
+      updateLunchFlag(p);
+      render();
+      calculate();
+    });
+
+    var arrow = document.createElement("span");
+    arrow.textContent = "→";
+
+    var back;
+    if(p.isLunch && !p.back){
+      back = document.createElement("span");
+      back.textContent = "IN CORSO";
+      back.style.cssText = "flex:1;text-align:center;color:#9a3412;font-weight:700;font-size:.9rem";
+    } else {
+      back = document.createElement("input");
+      back.type = "time";
+      back.value = p.back || "";
+      back.addEventListener("change", function(){
+        p.back = back.value;
+        if(p.back) p.isLunch = false; // rientro inserito -> non più "in corso"
+        render();
+        calculate();
+      });
+    }
+
+    row.appendChild(out);
+    row.appendChild(arrow);
+    row.appendChild(back);
+    card.appendChild(row);
+    box.appendChild(card);
+  });
+}
+
+function updateLunchFlag(p){
+  // pausa pranzo se uscita >= 13:00 (780 min) e senza rientro
+  if(p.out && !p.back && mins(p.out) >= 780){
+    // evita due pause pranzo contemporanee aperte: se un'altra è aperta, questa diventa "Pausa N"
+    var anotherOpen = pauses.some(function(x){
+      return x.id !== p.id && x.isLunch && !x.back;
+    });
+    if(!anotherOpen){
+      p.isLunch = true;
+      p.name = "Pausa pranzo";
+      lunchId = p.id;
+      return;
+    }
+  }
+  // se non è più pranzo o non è aperta
+  if(p.isLunch && (p.back || !p.out || mins(p.out) < 780)){
+    p.isLunch = false;
+    p.name = nextManualName();
+    if(lunchId === p.id) lunchId = null;
+  }
+}
+
+function addPause(out, back, name){
+  if(pauses.length >= 3){
+    err("Puoi inserire al massimo 3 pause.");
+    return;
+  }
+  var p = {
+    id: "p" + Date.now() + Math.random().toString(36).slice(2,6),
+    out: out || "",
+    back: back || "",
+    name: name || nextManualName(),
+    isLunch: name === "Pausa pranzo"
+  };
+  pauses.push(p);
+  if(p.isLunch && !p.back) lunchId = p.id;
+  render();
+  clearErr();
+}
+
+/* ============================================================
+   PARSER INSERIMENTO RAPIDO
+   ============================================================ */
+function parseTimes(raw){
+  if(!raw) return [];
+  var out = [];
+  // trova tutte le occorrenze di HH:MM, H:MM, HH.MM, H.MM, e anche HMM/HHMM isolate
+  // Usiamo un tokenizzatore: dividiamo per spazi/virgole e proviamo normalizeTime su ciascun token
+  var tokens = raw.split(/[\s,;]+/);
+  var found = {};
+  tokens.forEach(function(t){
+    if(!t) return;
+    var norm = normalizeTime(t);
+    if(norm && !found[norm]){
+      found[norm] = true;
+      out.push(norm);
+    }
+  });
+  // ordina cronologicamente
+  out.sort(function(a,b){ return mins(a) - mins(b); });
+  return out;
+}
+
+function importQuick(){
+  clearErr();
+  var raw = document.getElementById("quick").value;
+  var list = parseTimes(raw);
+
+  if(list.length === 0){
+    err("Non ho trovato orari validi. Usa formati come 8:34 oppure 8.34.");
+    return;
+  }
+
+  // reset stato pause
+  pauses = [];
+  lunchId = null;
+  hideLunch();
+
+  // ingresso
+  document.getElementById("entry").value = list[0];
+
+  // coppie successive (max 3 pause)
+  var i = 1;
+  var count = 0;
+  while(i < list.length && count < 3){
+    var out = list[i];
+    var back = list[i+1] || "";
+    var om = mins(out);
+
+    // validazione
+    if(back && mins(back) <= om){
+      err("Orari non coerenti: " + out + " → " + back + " (il rientro deve essere successivo all'uscita).");
+      render();
+      calculate();
+      return;
+    }
+
+    var isLunch = (om >= 780) && !back;
+    // se ha rientro ma l'uscita è >= 13:00, è comunque "Pausa pranzo" completata (non in corso)
+    var isLunchCompleted = (om >= 780) && back;
+
+    addPause(out, back, (isLunch || isLunchCompleted) ? "Pausa pranzo" : null);
+    // addPause può rinominare: se è una pausa pranzo completata, il nome è già "Pausa pranzo"
+    // e isLunch resta true ma !back è falso, quindi non è "in corso"
+    if(isLunchCompleted){
+      // correggi: pausa pranzo completata non deve essere "in corso"
+      var last = pauses[pauses.length-1];
+      last.isLunch = true;
+    }
+    if(isLunch){
+      lunchId = pauses[pauses.length-1].id;
+    }
+    i += 2;
+    count++;
+  }
+
+  if(list.length > 7){
+    // 1 ingresso + 3 pause * 2 = 7 ; oltre, ignoriamo
+    // (già limitato dal while, ma avvisiamo)
+  }
+
+  render();
+  calculate();
+}
+
+/* ============================================================
+   CALCOLO ORARIO USCITA
+   ============================================================ */
+function calculate(){
+  clearErr();
+  var entry = document.getElementById("entry").value;
+  if(!entry){
+    err("Inserisci l'orario di ingresso.");
+    document.getElementById("result").style.display = "none";
+    hideLunch();
+    return;
+  }
+
+  var total = 0;
+  var details = [];
+  var openLunch = null;
+  var completed = 0;
+
+  for(var i=0; i<pauses.length; i++){
+    var p = pauses[i];
+    if(!p.out && !p.back) continue;
+
+    if(p.out && !p.back){
+      if(p.isLunch){
+        openLunch = p;
+        continue; // pausa pranzo in corso: non conteggiata
+      } else {
+        err(p.name + " incompleta.");
+        return;
+      }
+    }
+    if(!p.out || !p.back){
+      err(p.name + " incompleta.");
+      return;
+    }
+    var a = mins(p.out), b = mins(p.back);
+    if(b <= a){
+      err(p.name + ": il rientro deve essere successivo all'uscita.");
+      return;
+    }
+    var d = b - a;
+    total += d;
+    completed++;
+    details.push(p.name + ": " + p.out + " → " + p.back + " (" + fmt(d) + ")");
+  }
+
+  var work = +document.getElementById("work").value;
+  var exit = mins(entry) + work + total;
+
+  document.getElementById("exit").textContent = clock(exit);
+  document.getElementById("wo").textContent = fmt(work);
+  document.getElementById("bo").textContent = fmt(total);
+  document.getElementById("po").textContent = fmt(work + total);
+  document.getElementById("co").textContent = completed;
+  document.getElementById("details").innerHTML = details.length
+    ? details.map(function(x){ return "<li>" + x + "</li>"; }).join("")
+    : "<li>Nessuna pausa completata</li>";
+  document.getElementById("result").style.display = "block";
+
+  if(openLunch){
+    showLunch(openLunch);
+  } else {
+    hideLunch();
+  }
+}
+
+/* ============================================================
+   TIMER PAUSA PRANZO
+   ============================================================ */
+function showLunch(p){
+  document.getElementById("lunch").style.display = "block";
+  var out = p.out;
+  var suggested = clock(mins(out) + 30);
+  document.getElementById("lunchInfo").innerHTML =
+    "Uscita: <strong>" + out + "</strong><br>" +
+    "Rientro suggerito: <strong>" + suggested + "</strong>";
+  // reset del timer al valore corrente
+  resetTimer();
+}
+
+function hideLunch(){
+  stopTimer();
+  document.getElementById("lunch").style.display = "none";
+  document.getElementById("banner").style.display = "none";
+}
+
+function getMinutes(){
+  var el = document.getElementById("minutes");
+  var n = +el.value;
+  if(!isFinite(n) || n < 1) n = 28;
+  if(n > 120) n = 120;
+  el.value = n;
+  return Math.round(n);
+}
+
+function updateTimerDisplay(){
+  var m = Math.floor(timerSeconds / 60);
+  var s = timerSeconds % 60;
+  document.getElementById("timer").textContent =
+    (m<10?"0"+m:""+m) + ":" + (s<10?"0"+s:""+s);
+}
+
+function resetTimer(){
+  stopTimer();
+  timerSeconds = getMinutes() * 60;
+  updateTimerDisplay();
+  document.getElementById("banner").style.display = "none";
+  if(bannerTimer){ clearTimeout(bannerTimer); bannerTimer = null; }
+}
+
+function startTimer(){
+  if(timerId !== null) return;
+  if(timerSeconds <= 0) resetTimer();
+  timerId = setInterval(function(){
+    timerSeconds--;
+    updateTimerDisplay();
+    if(timerSeconds <= 0){
+      stopTimer();
+      // messaggio evidente IN PAGINA (non alert)
+      var banner = document.getElementById("banner");
+      banner.style.display = "block";
+      banner.textContent = "🔔 È ora di timbrare!";
+      if(bannerTimer) clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(function(){
+        banner.style.display = "none";
+      }, 15000);
+    }
+  }, 1000);
+}
+
+function stopTimer(){
+  if(timerId !== null){
+    clearInterval(timerId);
+    timerId = null;
+  }
+}
+
+/* ============================================================
+   EVENTI
+   ============================================================ */
+document.getElementById("import").addEventListener("click", importQuick);
+document.getElementById("add").addEventListener("click", function(){ addPause(); });
+document.getElementById("calc").addEventListener("click", calculate);
+document.getElementById("start").addEventListener("click", startTimer);
+document.getElementById("stop").addEventListener("click", stopTimer);
+document.getElementById("reset").addEventListener("click", resetTimer);
+document.getElementById("minutes").addEventListener("change", resetTimer);
+document.getElementById("entry").addEventListener("change", calculate);
+document.getElementById("work").addEventListener("change", calculate);
+
+/* ============================================================
+   INIZIALIZZO
+   ============================================================ */
+render();
+calculate();
+
+})();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js');
+    });
+  }
+</script>
+</body>
+</html>
